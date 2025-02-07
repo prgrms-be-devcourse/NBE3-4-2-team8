@@ -1,6 +1,7 @@
 package com.ll.nbe342team8.domain.jwt;
 
 import com.ll.nbe342team8.domain.member.member.entity.Member;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class JwtService {
 
         // JWT 토큰을 생성합니다. 이때 카카오 ID를 주요 식별자로 사용합니다
         return Jwts.builder()
-                .setSubject(member.getOauthId())  // 카카오 ID를 토큰의 주체로 설정
+                .setSubject(member.getOAuthId())  // 카카오 ID를 토큰의 주체로 설정
                 .claim("id", member.getId())      // 내부 DB ID는 부가 정보로 포함
                 .claim("email", member.getEmail())
                 .claim("name", member.getName())
@@ -44,6 +45,23 @@ public class JwtService {
                 .getBody()
                 .getSubject();  // setSubject()로 설정한 카카오 ID를 가져옵니다
     }
+
+//    public String getKakaoIdFromToken(String token) {
+//        if (token == null || token.isBlank()) {
+//            throw new IllegalArgumentException("JWT token is null or empty");
+//        }
+//
+//        try {
+//            Claims claims = Jwts.parserBuilder()
+//                    .setSigningKey(secretKey)
+//                    .build()
+//                    .parseClaimsJws(token)
+//                    .getBody();
+//            return claims.get("kakaoId", String.class);
+//        } catch (JwtException e) {
+//            throw new IllegalArgumentException("Invalid JWT token", e);
+//        }
+//    }
 
     // 토큰의 유효성을 검증하는 메서드도 추가합니다
     public boolean validateToken(String token) {
