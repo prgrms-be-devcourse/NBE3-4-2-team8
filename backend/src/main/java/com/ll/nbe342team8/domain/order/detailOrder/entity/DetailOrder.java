@@ -8,11 +8,14 @@ import lombok.*;
 
 @Entity
 @Getter
-@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class DetailOrder extends BaseTime {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // AUTO_INCREMENT
+    private Long id;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
@@ -21,14 +24,12 @@ public class DetailOrder extends BaseTime {
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
-    @Column(name = "book_quantity")
     private int bookQuantity;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "delivery_status")
-    private DeliveryStatus deliveryStatus;
+	@Enumerated(EnumType.STRING)
+	private DeliveryStatus deliveryStatus;
 
-    public enum DeliveryStatus {
-        PENDING, SHIPPED, DELIVERED
+    public void setDeliveryStatus(DeliveryStatus deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
     }
 }
