@@ -8,10 +8,9 @@ import com.ll.nbe342team8.domain.member.member.entity.Member;
 import com.ll.nbe342team8.domain.member.member.service.MemberService;
 import com.ll.nbe342team8.domain.oauth.SecurityUser;
 import com.ll.nbe342team8.global.exceptions.ServiceException;
-<<<<<<< HEAD
+
 import io.swagger.v3.oas.annotations.Operation;
-=======
->>>>>>> 5ee7eebc425604cde2cef208c325cb58bbbb69de
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;

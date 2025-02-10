@@ -76,12 +76,6 @@ public class SwaggerConfig {
 				.build();
 	}
 
-	@Bean
-	public GroupedOpenApi memberAPI() {
-		return GroupedOpenApi.builder()
-				.group("member")
-				.pathsToMatch("/api/auth/me/**")
-				.build();
-	}
+	
 }
 
