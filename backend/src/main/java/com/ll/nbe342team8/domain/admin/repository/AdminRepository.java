@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.ll.nbe342team8.domain.member.member.entity.Member;
 
-public interface AdminLoginRepository extends JpaRepository<Member, Long> {
+public interface AdminRepository extends JpaRepository<Member, Long> {
 
 	// 관리자 계정 조회 (이메일ID, 회원 유형 확인)
 	Optional<Member> findByEmailAndMemberType(String email, Member.MemberType memberType);

@@ -1,5 +1,6 @@
 package com.ll.nbe342team8.global.security;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -91,15 +92,19 @@ public class SecurityConfig {
 		return http.build();
 	}
 
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowCredentials(true);
+		config.setAllowedOrigins(List.of("http://localhost:3000"));
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+		config.setAllowedHeaders(List.of("*"));
+		config.setExposedHeaders(Arrays.asList("Authorization", "RefreshToken"));
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", config);
 		return source;
 	}
-
 
 	@Bean
 	public OAuth2SuccessHandler oAuth2SuccessHandler() {
@@ -110,7 +115,7 @@ public class SecurityConfig {
 	public AuthenticationManager authenticationManager(HttpSecurity http, MemberService memberService) throws Exception {
 		DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
 		authenticationProvider.setUserDetailsService(identifier -> {
-			// ✅ 이메일을 입력하면, oAuthId로 변환하여 인증
+			// 이메일을 입력하면, oAuthId로 변환하여 인증
 			Optional<Member> optionalMember;
 			if (identifier.contains("@")) {
 				optionalMember = memberService.findByEmail(identifier);

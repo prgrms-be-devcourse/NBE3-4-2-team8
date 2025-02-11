@@ -1,6 +1,5 @@
 package com.ll.nbe342team8.domain.jwt;
 
-
 import java.io.IOException;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
