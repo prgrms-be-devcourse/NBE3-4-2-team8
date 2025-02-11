@@ -17,21 +17,19 @@ export async function GET(req: Request)  {
     console.log("-----------------------------------------------");
     
     
-    const jwtToken = getJwtTokenFromHeaders(req); // 🔹 클라이언트에서 보낸 JWT 토큰 추출
+    const cookies = req.headers.get("cookie") || "";
 
-    if (!jwtToken) {
-        console.log("JWT Token not found in Authorization header");
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-        });
-    }
-    
+    const accessToken = cookies
+        .split("; ")
+        .find(row => row.startsWith("accessToken="))
+        ?.split("=")[1];
+   
 
-    const response = await fetch(`http://localhost:8080/api/auth/my`, {
+    const response = await fetch(`http://localhost:8080/api/auth/me/my`, {
         method: "GET",
         headers: { "Content-Type": "application/json",
-                   "Authorization": `Bearer ${jwtToken}`,
+            cookie: cookies,
+                  
          },
         redirect: "manual"
     });
@@ -55,25 +53,19 @@ export async function PUT(req: Request) {
     console.log(`api/my/route.ts - Put MyPage `);
     console.log("-----------------------------------------------");
 
-    const jwtToken = getJwtTokenFromHeaders(req); // 🔹 클라이언트에서 보낸 JWT 토큰 추출
+    const cookies = req.headers.get("cookie") || "";
 
-    if (!jwtToken) {
-        console.log("JWT Token not found in Authorization header");
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-        });
-    }
+    
 
     try {
         
         const requestBody = await req.json(); // 🔹 요청의 body 데이터 가져오기
         console.log("Received request body:", requestBody);
 
-        const response = await fetch(`http://localhost:8080/api/auth/my`, {
+        const response = await fetch(`http://localhost:8080/api/auth/me/my`, {
             method: "PUT",
             headers: { "Content-Type": "application/json",
-                       "Authorization": `Bearer ${jwtToken}`,
+                        cookie: cookies,
              },
             body: JSON.stringify(requestBody), // 🔹 받은 body 데이터를 그대로 백엔드로 전달
         });
