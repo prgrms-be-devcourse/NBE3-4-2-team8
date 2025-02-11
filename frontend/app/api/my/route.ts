@@ -1,14 +1,7 @@
 import { NextResponse } from "next/server";
 
 
-// 🔹 클라이언트 요청에서 JWT 토큰 추출 함수
-function getJwtTokenFromHeaders(req: Request): string | null {
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-        return authHeader.split("Bearer ")[1]; // 🔹 "Bearer " 다음 토큰 부분만 추출
-    }
-    return null;
-}
+
 
 export async function GET(req: Request)  {
     
@@ -19,10 +12,7 @@ export async function GET(req: Request)  {
     
     const cookies = req.headers.get("cookie") || "";
 
-    const accessToken = cookies
-        .split("; ")
-        .find(row => row.startsWith("accessToken="))
-        ?.split("=")[1];
+
    
 
     const response = await fetch(`http://localhost:8080/api/auth/me/my`, {
