@@ -24,7 +24,7 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<List<OrderDTO>> getOrders(@CookieValue(value = "accessToken", required = false) String token) {
         Member member = authService.validateTokenAndGetMember(token);
-        String oauthId = member.getOauthId(); // 여기서 oauthId를 가져옵니다.
+        String oauthId = member.getOauthId(); // 여기서 oauthId를 가져옵니다!
 
         List<OrderDTO> orders = orderService.getOrdersByOauthId(oauthId);
         return ResponseEntity.ok(orders);
