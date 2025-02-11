@@ -26,6 +26,9 @@ spring:
           physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
 
+  mvc:
+    static-path-pattern: /static/**
+
   output:
     ansi:
       enabled: always #색깔
