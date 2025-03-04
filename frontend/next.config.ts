@@ -13,8 +13,20 @@ const nextConfig: NextConfig = {
         port: '8080',
         pathname: '/images/eventBanner/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'k.kakaocdn.net',
+      },
     ],
   },
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb'
+    },
+  },
 };
+
+
 
 export default nextConfig;

@@ -1,117 +1,188 @@
-// CartList.tsx
-"use client";
-import React, { useState, useEffect } from "react";
-import CartItem from "./CartItem";
-import { fetchCart, updateCartItem, removeCartItems } from "@/utils/api.js";
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import CartItem from './CartItem';
+import {
+  fetchCart,
+  updateCartItem,
+  removeCartItems,
+  fetchAnonymousCart,
+  addToCart,
+} from '@/utils/api.js';
+import { useAuth } from '@/app/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 interface CartItemData {
-    member: number; // memberId
-    id: number; // bookId
-    title: string;
-    quantity: number;
-    price: number; // 가격 필드 추가
-    coverImage: string;
+  bookId: number;
+  title: string;
+  quantity: number;
+  price: number;
+  coverImage: string;
 }
 
 const CartList = () => {
-    const [items, setItems] = useState<CartItemData[]>([]);
-    // 현재는 memberId가 1번으로 고정되어 있습니다.
-    const memberId = 1;
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [items, setItems] = useState<CartItemData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    // 장바구니 목록 불러오기
-    const loadCart = async () => {
-        try {
-            const cartData = await fetchCart(memberId);
-            console.log("📌 장바구니 데이터:", cartData);
+  // 장바구니 불러오기
+  const loadCart = async () => {
+    setIsLoading(true);
+    setError(null);
 
-            const newItems = cartData.map((cartItem: any) => ({
-                member: cartItem.memberId,
-                id: cartItem.bookId,
-                title: cartItem.title,
-                quantity: cartItem.quantity,
-                price: cartItem.price,
-                coverImage: cartItem.coverImage || "/default-book.png",
-            }));
+    try {
+      if (user) {
+        // 로그인 상태: DB에서 장바구니 데이터 불러오기
+        const cartData = await fetchCart();
+        setItems(cartData);
+      } else {
+        // 비로그인 상태: 로컬 스토리지에서 장바구니 데이터 불러오기
+        await loadLocalCart();
+      }
+    } catch (error) {
+      console.error('장바구니 불러오기 실패:', error);
+      setError('장바구니를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-            setItems(newItems);
-        } catch (error) {
-            console.error("장바구니 불러오기 실패:", error);
-        }
-    };
+  // 로컬 스토리지에서 장바구니 데이터 불러오기
+  const loadLocalCart = async () => {
+    const localCart = localStorage.getItem('localCart');
+    if (localCart) {
+      try {
+        const parsedLocalCart = JSON.parse(localCart);
+        const cartData = await fetchAnonymousCart(parsedLocalCart);
+        setItems(cartData);
+      } catch (error) {
+        console.error('익명 장바구니 불러오기 실패:', error);
+        setError('로컬 장바구니 데이터를 불러오는 중 오류가 발생했습니다.');
+      }
+    } else {
+      setItems([]);
+    }
+  };
 
-    useEffect(() => {
-        loadCart();
-    }, []);
+  // 로컬 스토리지와 DB 동기화 (로그인 시)
+  const syncLocalCartWithDB = async () => {
+    if (!user) return;
 
-    // 수량 변경
-    const handleQuantityChange = async (bookId: number, newQuantity: number) => {
-        try {
-            await updateCartItem(bookId, memberId, newQuantity);
-            await loadCart();
-        } catch (error) {
-            console.error("수량 변경 실패:", error);
-        }
-    };
+    const localCart = localStorage.getItem('localCart');
+    if (localCart) {
+      try {
+        const parsedLocalCart = JSON.parse(localCart);
+        // 서버 업데이트를 위한 플래그 설정 (필요에 따라 값 조정)
+        parsedLocalCart.isAddToCart = true;
+        localStorage.removeItem('localCart');
+        await updateCartItem(parsedLocalCart);
+        await loadCart();
+      } catch (error) {
+        console.error('로컬 장바구니 동기화 실패:', error);
+      }
+    }
+  };
 
-    // 장바구니 아이템 삭제
-    const handleRemove = async (bookId: number) => {
-        try {
-            await removeCartItems(memberId, [{ bookId, quantity: 1 }]);
-            await loadCart();
-        } catch (error) {
-            console.error("장바구니 삭제 실패:", error);
-        }
-    };
+  // 수량 변경 처리
+  const handleQuantityChange = async (bookId: number, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    try {
+      if (user) {
+        await updateCartItem([{ bookId, quantity: newQuantity, isAddToCart: false }]);
+        await loadCart();
+      } else {
+        const updatedItems = items.map((item) =>
+          item.bookId === bookId ? { ...item, quantity: newQuantity } : item,
+        );
+        setItems(updatedItems);
+        localStorage.setItem('localCart', JSON.stringify(updatedItems));
+      }
+    } catch (error) {
+      console.error('수량 변경 실패:', error);
+      setError('수량 변경 중 오류가 발생했습니다.');
+    }
+  };
 
-    // 총 상품 금액 계산 (각 상품의 price * quantity 합산)
-    const totalPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
+  // 항목 삭제 처리
+  const handleRemove = async (bookId: number) => {
+    try {
+      if (user) {
+        await removeCartItems([{ bookId, quantity: 1 }]);
+        await loadCart();
+      } else {
+        const updatedItems = items.filter((item) => item.bookId !== bookId);
+        setItems(updatedItems);
+        localStorage.setItem('localCart', JSON.stringify(updatedItems));
+      }
+    } catch (error) {
+      console.error('장바구니 삭제 실패:', error);
+      setError('장바구니 항목 삭제 중 오류가 발생했습니다.');
+    }
+  };
 
-    return (
-        <div className="max-w-6xl mx-auto py-8">
-            <h1 className="text-2xl font-bold mb-6">장바구니 ({items.length})</h1>
+  // "구매하기" 버튼 클릭 시 주문 페이지로 이동
+  const handlePurchase = () => {
+    if (user) {
+      router.push('/order');
+    } else {
+      alert('로그인 후 이용해주세요.');
+    }
+  };
 
-            <div className="flex gap-10">
-                {/* 장바구니 아이템 목록 영역에 내부 스크롤 및 반응형 높이 적용 */}
-                <div className="flex-1 space-y-6 max-h-[80vh] overflow-y-auto">
-                    {items.map((item) => (
-                        <CartItem
-                            key={item.id}
-                            title={item.title}
-                            quantity={item.quantity}
-                            price={item.price}
-                            coverImage={item.coverImage}
-                            onQuantityChange={(newQuantity) =>
-                                handleQuantityChange(item.id, newQuantity)
-                            }
-                            onRemove={() => handleRemove(item.id)}
-                        />
-                    ))}
-                </div>
+  useEffect(() => {
+    if (!authLoading) loadCart();
+  }, [authLoading]);
 
-                {/* 장바구니 요약 영역 */}
-                <div className="w-96 border border-gray-200 rounded p-6">
-                    <h2 className="text-lg font-medium mb-4">상품 금액</h2>
-                    <div className="flex justify-between mb-4">
-                        <span>총 상품 금액</span>
-                        <span>{totalPrice.toLocaleString()}원</span>
-                    </div>
-                    <div className="space-y-2 mb-4">
-                        <div className="flex justify-between">
-                            <span>배송비</span>
-                            <span>무료</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span>상품 할인</span>
-                            <span>확인 필요</span>
-                        </div>
-                    </div>
-                    <button className="w-full bg-black text-white py-3 rounded">
-                        구매하기
-                    </button>
-                </div>
+  useEffect(() => {
+    if (user) syncLocalCartWithDB();
+  }, [user]);
+
+  const totalPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
+
+  if (isLoading || authLoading) return <div>로딩 중...</div>;
+  if (error) return <div>{error}</div>;
+
+  return (
+    <div className="max-w-6xl mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-6">장바구니 ({items.length})</h1>
+      {items.length === 0 ? (
+        <div className="text-center py-10">장바구니가 비어 있습니다.</div>
+      ) : (
+        <div className="flex flex-col md:flex-row gap-10">
+          {/* 좌측: 장바구니 상품 목록 */}
+          <div className="flex-1 space-y-6 max-h-[80vh] overflow-y-auto">
+            {items.map((item) => (
+              <CartItem
+                key={item.bookId}
+                title={item.title}
+                quantity={item.quantity}
+                price={item.price}
+                coverImage={item.coverImage}
+                onQuantityChange={(newQuantity) => handleQuantityChange(item.bookId, newQuantity)}
+                onRemove={() => handleRemove(item.bookId)}
+              />
+            ))}
+          </div>
+          {/* 우측: 결제 요약 및 구매하기 버튼 */}
+          <div className="w-full md:w-96 border border-gray-200 rounded p-6">
+            <h2 className="text-lg font-medium mb-4">상품 금액</h2>
+            <div className="flex justify-between mb-4">
+              <span>총 상품 금액</span>
+              <span>{totalPrice.toLocaleString()}원</span>
             </div>
+            <button
+              onClick={handlePurchase}
+              className="w-full bg-black text-white py-3 rounded hover:bg-gray-800 transition-colors"
+            >
+              구매하기
+            </button>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default CartList;
